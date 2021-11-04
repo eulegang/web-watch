@@ -1,5 +1,5 @@
-CFLAGS=-O2 -g -Wall -Wextra -Isrc -DNDEBUG $(OPTFLAGS)
-LIBS=$(OPTLIBS)
+CFLAGS=-std=c11 -O2 -g -Wall -Wextra -Isrc -DNDEBUG $(OPTFLAGS)
+LIBS=`pkg-config --libs openssl` $(OPTLIBS)
 
 PREFIX?=/usr/local
 

@@ -57,6 +57,8 @@ void watch_list_free(watch_list_t* list) {
   ITER_ITEMS(list) {
     if (_.path) free(_.path);
   }
+
+  free(list);
 }
 
 watch_list_t* watch_list_mk(void) {

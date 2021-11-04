@@ -13,8 +13,6 @@ typedef struct watch_list_t {
   struct watch_list_t *next;
 } watch_list_t;
 
-static watch_list_t *watch_list;
-
 void watch_list_add(watch_list_t*, watch_item_t);
 void watch_list_watching(watch_list_t*, int, char*);
 char *watch_list_lookup(watch_list_t*, int);

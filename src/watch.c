@@ -9,7 +9,9 @@
 #include <sys/stat.h>
 
 #include "watch.h"
+
 #include "watch_list.h"
+#include "diff_tracker.h"
 
 #define IN_DIR_FLAGS IN_CREATE | IN_DELETE | IN_DELETE_SELF
 #define IN_REG_FLAGS IN_CLOSE_WRITE | IN_MOVE_SELF | IN_DELETE_SELF
@@ -20,6 +22,9 @@ void __debug_display_event(const struct inotify_event*);
 #else
 #define debug_event(E)
 #endif
+
+static watch_list_t *watch_list;
+static diff_list_t *diff_list;
 
 char cur_path[PATH_MAX];
 
@@ -34,7 +39,11 @@ int watch_dir(char *path) {
   if (watch_list) 
     watch_list_free(watch_list);
 
+  if (diff_list)
+    diff_list_free(diff_list);
+
   watch_list = watch_list_mk();
+  diff_list = diff_list_mk();
 
   strncat(cur_path, path, PATH_MAX);
   int len = strlen(cur_path);
@@ -82,6 +91,7 @@ void watch_notifications(int fd) {
     }
 
     watch_list_display(1, watch_list);
+    diff_list_display(diff_list, 1);
   }
 
   return;
@@ -174,6 +184,10 @@ int inh_dir_new_ent(int inot_fd, const struct inotify_event *event) {
   int flags = S_ISDIR(st.st_mode) ? 
     IN_DIR_FLAGS : 
     IN_REG_FLAGS;
+
+  if (!S_ISDIR(st.st_mode)) {
+    diff_list_change(diff_list, path);
+  }
 
   int wd = inotify_add_watch(inot_fd, path, flags);
   if (wd == -1) goto error;
