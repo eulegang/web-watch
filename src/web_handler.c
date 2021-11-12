@@ -4,6 +4,8 @@
 #include <dbg.h>
 #include <stdbool.h>
 
+#define STATIC_RESP(fd, id) write(fd, id, id ## _LEN)
+
 #define THREAD_COUNT 4
 #define FD_COUNT 16
 
@@ -19,6 +21,24 @@ cnd_t fd_queue_fill;
 
 int fds[FD_COUNT];
 int fds_start = 0, fds_end = 0;
+
+const char *const TOO_LARGE = 
+  "HTTP/1.1 413 Payload Too Large\r\n"
+  "Connection: close\r\n"
+  "\r\n"
+  "Payload too large"
+;
+const size_t TOO_LARGE_LEN = strlen(TOO_LARGE);
+
+const char *const NOT_FOUND =
+  "HTTP/1.1 404 Not Found\r\n"
+  "Connection: close\r\n"
+  "Content-Type: text/plain\r\n"
+  "\r\n"
+  "Page Not Found"
+;
+const size_t NOT_FOUND_LEN = strlen(NOT_FOUND);
+
 
 void setup_handlers(void) {
   mtx_init(&fd_queue_mtx, mtx_plain);
@@ -90,12 +110,15 @@ reset:
 
   log_info("Request: %.*s", bytes_read, buf);
 
-  const char* resp = "HTTP/1.1 404 Not Found\r\nConnection: close\r\nContent-Type: text/plain\r\n\r\nPage not found";
+  if (bytes_read >= 4095) {
+    STATIC_RESP(fd, TOO_LARGE);
+    goto close_conn;
+  }
 
-  write(fd, resp, strlen(resp));
+  STATIC_RESP(fd, NOT_FOUND);
 
+close_conn:
   close(fd);
-
   goto reset;
 
   return 0;
